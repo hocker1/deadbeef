@@ -1,0 +1,33 @@
+!include MAKEFILE.LOC
+
+# compiler
+CC=$(TCCDIR)\bin\tcc.exe
+CFLAGS=-1 -mc -g3 -j3 -G -d -O2 -Z -I$(TCCDIR)\include -Isrc -Isrc\lib
+
+# linker
+TL=$(TCCDIR)\bin\tlink
+
+# all objects
+OBJS=\
+ui_kbd.obj \
+ui_vga.obj \
+main.obj
+
+# default rule
+start.exe: $(OBJS)
+    $(TL) /L$(TCCDIR)\lib /x @&&! 
+c0c $(OBJS) 
+$*
+$*
+cc
+!
+
+# implicit rules to compile sources
+{src}.c.obj:
+    $(CC) $(CFLAGS) -c $<
+{src\lib}.c.obj:
+    $(CC) $(CFLAGS) -c $<
+
+# clean obj files
+clean:
+    del *.obj

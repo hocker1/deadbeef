@@ -1,0 +1,10 @@
+*~
+*.o
+*.obj
+*.exe
+*.res
+stderr.txt
+stdout.txt
+MAKEFILE.LOC
+nbproject
+compile.bat
