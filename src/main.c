@@ -1,45 +1,38 @@
 #include "ui_vga.h"
 #include "ui_kbd.h"
+#include "vga_img.h"
+#include "utils.h"
 #include <stdio.h>
-#include <alloc.h>
+#include <stdlib.h>
 
 keycode_t keycode;
+sVgaImage img;
+error_t err;
 
 FILE *fp;
 
-struct sMyHeader {
-    
-    unsigned short mark;
-    unsigned short width;
-    unsigned short height;
-    unsigned short reserved;
-    
-} hdr;
-
-char *data;
-size_t size;
-
 int main(void) {
 
-    fp = fopen("test.my", "rb");
-    fread(&hdr, sizeof(hdr), 1, fp);
-  
-    size = hdr.width * hdr.height;
-    if (!(data = (char*)malloc(size))) {
-        
-        fclose(fp);
-        printf("Cannot allocate.\n");
-        return -1;
-    }
-
-    fread(data, size, 1, fp);
+    fp = fopen("test5.my", "rb");
+    err = vga_img_create_load(&img, fp);
     fclose(fp);
     
+    if (err != ERR_OK) {
+        
+        printf("Error loading image: %d\n", (int)err);
+        return -1;
+    }
+ 
     vga_open();
     ui_kbd_init();
 
-    vga_draw_tn(data, VGA_XY_TO_POS(0, 0), hdr.width, hdr.height);
-    free(data);
+    vga_img_draw(&img, VGA_XY_TO_POS(0, 32));
+    vga_img_draw(&img, VGA_XY_TO_POS(16, 32));
+    vga_img_draw(&img, VGA_XY_TO_POS(32, 32));
+    vga_img_draw(&img, VGA_XY_TO_POS(32, 48));
+    vga_img_draw(&img, VGA_XY_TO_POS(48, 48));
+
+    vga_img_destroy(&img);
     
     while ((keycode = ui_kbd_queue_wait()) == UI_KBD_KEYCODE_NONE)
         ;

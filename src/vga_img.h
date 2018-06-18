@@ -2,46 +2,43 @@
 #define __VGA_IMG_H
 
 #include "ui_vga.h"
+#include "utils.h"
+#include <stdio.h>
 
-// pre-definitions of used structures
-typedef struct sVgaImage sVgaImage;
-typedef sVgaImage *hsVgaImage;
+// bitmap image flags
+#define VGA_IMG_FLG_VALID           0x01
+#define VGA_IMG_FLG_TRANSPARENT     0x02
+
+// bitmap image
+typedef struct sVgaImage {
+    
+    unsigned char       flags;              // VGA_IMG_FLG_*
+    vga_color_index_t   transparency;       // index of transparency color for VGA_IMG_FLG_TRANSPARENT
+    vga_length_t        w;                  // image width in pixels
+    vga_length_t        h;                  // image height in pixels
+    void                *data;              // image data
+    
+} sVgaImage, *hsVgaImage;
 typedef const sVgaImage *hcsVgaImage;
 
-typedef struct sVgaDraw sVgaDraw;
-typedef sVgaDraw *hsVgaDraw;
-typedef const sVgaDraw *hcsVgaDraw;
+// image file flags
+#define VGA_IMG_HDR_TRANSPARENT     0x01
 
-// structure for single image
-#define VGA_IMG_FLG_TRANSPARENT     0x01
-
-struct sVgaImage {
+// image file header
+typedef struct sVgaImgHeader {
     
-    unsigned char                   flags;          // VGA_IMG_FLG_*
-    vga_color_index_t                 color_trans;    // color for transparency
+    unsigned short      mark;
+    unsigned short      w;
+    unsigned short      h;
+    unsigned char       flags;
+    unsigned char       transparency;
     
-    vga_length_t                    w;              // width
-    vga_length_t                    h;              // height
-    void                            *data;          // image data
-};
-
-// structure describing how to draw (and crop) given image on certain position to another given image
-struct sVgaDraw {
-    
-    vga_position_t                  src_start;      // starting offset in source image data
-    vga_position_t                  dst_start;      // starting offset in target image data
-    vga_length_t                    line_length;    // how many pixels are copied on every line
-    vga_length_t                    src_skip;       // source image's data bytes to skip after single line data copied
-    vga_length_t                    dst_skip;       // target image's data bytes to skip after single line data copied
-    vga_length_t                    line_count;     // how many lines to be drawn at all
-};
+} sVgaImgHeader, *hsVgaImgHeader;
+typedef const sVgaImgHeader *hcsVgaImgHeader;
 
 // functions
-void vga_img_create(hsVgaImage img, vga_length_t w, vga_length_t h, const void *data);
-void vga_img_make_transparent(hsVgaImage img, vga_color_index_t color);
-
-//void vga_create_draw_screen(hsVgaDraw draw, hcsVgaImage src, vga_coord_t x, vga_coord_t y);
-//void vga_img_draw(hcsVgaImage src, vga_coord_t x, vga_coord_t y);
-//void vga_img_draw_by(hcsVgaImage src, hcsVgaDraw draw);
+error_t vga_img_create_load(hsVgaImage img, FILE *fp);
+void vga_img_destroy(hsVgaImage img);
+void vga_img_draw(hsVgaImage img, vga_position_t pos);
 
 #endif

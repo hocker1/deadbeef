@@ -1,6 +1,8 @@
 #ifndef __UI_VGA_H
 #define __UI_VGA_H
 
+#include "utils.h"
+
 // integer types
 typedef unsigned short vga_length_t;                // length along single axis
 typedef signed short vga_coord_t;                   // coordinate or offset along single axis

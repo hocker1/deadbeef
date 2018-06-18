@@ -11,6 +11,7 @@ TL=$(TCCDIR)\bin\tlink
 OBJS=\
 ui_kbd.obj \
 ui_vga.obj \
+vga_img.obj \
 main.obj
 
 # default rule
