@@ -34,3 +34,8 @@ cc
 # clean obj files
 clean:
     del *.obj
+
+# convert assets
+assets:
+    ..\gfxcnv\bmpcnv.exe test5.bmp test5.my
+    

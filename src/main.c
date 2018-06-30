@@ -6,8 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAP_W                       4
-#define MAP_H                       4
+#define MAP_W                       16
+#define MAP_H                       10
 
 #define TILE_SCREEN_W               16
 #define TILE_SCREEN_H               16
@@ -47,31 +47,50 @@ typedef struct sMapTile {
 sVgaImage       tile_image_main;
 sVgaImage       tile_image[8];                  // images to be used in map tiles
 char            map_dirty[MAP_H][MAP_W];
+
+#define X____   0
+#define XT___   (MAP_TILE_BLOCK_T)
+#define X_R__   (MAP_TILE_BLOCK_R)
+#define X__B_   (MAP_TILE_BLOCK_B)
+#define X___L   (MAP_TILE_BLOCK_L)
+#define XTR__   (MAP_TILE_BLOCK_T | MAP_TILE_BLOCK_R)
+#define XT_B_   (MAP_TILE_BLOCK_T | MAP_TILE_BLOCK_B)
+#define XT__L   (MAP_TILE_BLOCK_T | MAP_TILE_BLOCK_L)
+#define X_RB_   (MAP_TILE_BLOCK_R | MAP_TILE_BLOCK_B)
+#define X_R_L   (MAP_TILE_BLOCK_R | MAP_TILE_BLOCK_L)
+#define X__BL   (MAP_TILE_BLOCK_B | MAP_TILE_BLOCK_L)
+#define XTRB_   (MAP_TILE_BLOCK_T | MAP_TILE_BLOCK_R | MAP_TILE_BLOCK_B)
+#define XTR_L   (MAP_TILE_BLOCK_T | MAP_TILE_BLOCK_R | MAP_TILE_BLOCK_L)
+#define XT_BL   (MAP_TILE_BLOCK_T | MAP_TILE_BLOCK_B | MAP_TILE_BLOCK_L)
+#define X_RBL   (MAP_TILE_BLOCK_R | MAP_TILE_BLOCK_B | MAP_TILE_BLOCK_L)
+
+#define __      &tile_image[0]
+#define TT      &tile_image[1]
+#define _9      &tile_image[2]
+
 sMapTile        map_tile[MAP_H][MAP_W] = {
-    {
-        { &tile_image[0], MAP_TILE_BLOCK_T | MAP_TILE_BLOCK_L },
-        { &tile_image[0], MAP_TILE_BLOCK_T },
-        { &tile_image[0], MAP_TILE_BLOCK_T },
-        { &tile_image[0], MAP_TILE_BLOCK_T | MAP_TILE_BLOCK_R }
-    },
-    {
-        { &tile_image[0], MAP_TILE_BLOCK_B | MAP_TILE_BLOCK_L },
-        { &tile_image[0], 0 },
-        { &tile_image[0], 0 },
-        { &tile_image[0], MAP_TILE_BLOCK_R }
-    },
-    {
-        { &tile_image[1], MAP_TILE_BLOCK_B | MAP_TILE_BLOCK_L },
-        { &tile_image[0], MAP_TILE_BLOCK_B },
-        { &tile_image[0], MAP_TILE_BLOCK_B },
-        { &tile_image[0], MAP_TILE_BLOCK_B | MAP_TILE_BLOCK_R }
-    },
-    {
-        { &tile_image[1], MAP_TILE_BLOCK_B | MAP_TILE_BLOCK_L },
-        { &tile_image[1], MAP_TILE_BLOCK_B },
-        { &tile_image[1], MAP_TILE_BLOCK_B },
-        { &tile_image[1], MAP_TILE_BLOCK_B | MAP_TILE_BLOCK_R }
-    }
+    { {__,XT__L}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XTR__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,X__B_}, {__,X____}, {__,X____}, {_9,X__B_}, {__,X__B_}, {__,X__B_}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X_R__}, {TT,X____}, {__,X___L}, {__,X_R__}, {TT,X____}, {TT,X____}, {TT,X____}, {__,X___L}, {__,X__B_}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,XT___}, {__,X____}, {__,X____}, {__,XT___}, {__,XT___}, {__,XT___}, {__,X_R__}, {TT,X____}, {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X__B_}, {__,XT___}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X__B_}, {__,X_R__}, {TT,X____}, {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__}, {TT,X____}, {__,X___L}, {__,XT___}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X__BL}, {__,X__B_}, {_9,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,XT_B_}, {__,X__B_}, {_9,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X_RB_} },
+    { {TT,X___L}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X_R__} },
+/*
+    { {__,XT__L}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XTR__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X__BL}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X_RB_} },
+    { {TT,X___L}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X_R__} },
+*/ 
 };
 
 sMapObject      player = { 
@@ -81,8 +100,7 @@ sMapObject      player = {
         SPACE_TILE2PHY(1), 
         SPACE_TILE2PHY(1) 
     }, 
-    0, 
-    0, 
+    { 0, 0 },
     &tile_image[3] 
 };
 
@@ -205,6 +223,14 @@ error_t err;
 keycode_t keycode;
 char collision;
 
+// movement speed constants
+#define PLAYER_HSPD_WALK_MAX            16
+#define PLAYER_HSPD_WALK_ACC            2
+#define PLAYER_HSPD_JUMP_ACC            1
+#define PLAYER_VSPD_FALL_MAX            16
+#define PLAYER_VSPD_FALL_ACC            1
+#define PLAYER_VSPD_JUMP_ACC            33
+
 int main(void) {
     
     fp = fopen("test5.my", "rb");
@@ -220,6 +246,8 @@ int main(void) {
     for (i = 0, j = 0; i < tile_image_main.h; i += 16, j += 1)
         vga_img_create_from(&tile_image[j], &tile_image_main, i, 16);
 
+    vga_img_set_transparent(&tile_image[3], 5);
+    
     vga_open();
     ui_kbd_init();
 
@@ -228,36 +256,43 @@ int main(void) {
     
     for (;;) {
 
-        if (ui_kbd_pressed(UI_KBD_KEYCODE_CRSR_LEFT)) {
-         
-            if (player.pd.x > -16)
-                player.pd.x -= 2;
+        // walking left and right
+        if (ui_kbd_pressed(UI_KBD_KEYCODE_CRSR_LEFT) && !ui_kbd_pressed(UI_KBD_KEYCODE_CRSR_RIGHT)) {
+
+            player.pd.x -= (collision & MAP_TILE_BLOCK_B) ? PLAYER_HSPD_WALK_ACC : PLAYER_HSPD_JUMP_ACC;
+            if (player.pd.x < -PLAYER_HSPD_WALK_MAX)
+                player.pd.x = -PLAYER_HSPD_WALK_MAX;
         }
         else
-        if (ui_kbd_pressed(UI_KBD_KEYCODE_CRSR_RIGHT)) {
-            
-            if (player.pd.x < 16)
-                player.pd.x += 2;
+        if (ui_kbd_pressed(UI_KBD_KEYCODE_CRSR_RIGHT) && !ui_kbd_pressed(UI_KBD_KEYCODE_CRSR_LEFT)) {
+
+            player.pd.x += (collision & MAP_TILE_BLOCK_B) ? PLAYER_HSPD_WALK_ACC : PLAYER_HSPD_JUMP_ACC;
+            if (player.pd.x > PLAYER_HSPD_WALK_MAX)
+                player.pd.x = PLAYER_HSPD_WALK_MAX;
         }
         else {
-            
+
             player.pd.x /= 2;
         }
-        
-        if (ui_kbd_pressed(UI_KBD_KEYCODE_CRSR_UP)) {
+
+        // actions on single keypresses
+        while ((keycode = ui_kbd_queue_pop()) != UI_KBD_KEYCODE_NONE) {
             
-            // TODO - tohle neni dobra podminka pro pudu pod nohama :-*
-            if (collision & MAP_TILE_BLOCK_B)
-                player.pd.y = -24;
+            // jumping - only with ground under feet
+            if (keycode == UI_KBD_PRESS(CRSR_UP)) {
+
+                if (collision & MAP_TILE_BLOCK_B)
+                    player.pd.y = -PLAYER_VSPD_JUMP_ACC;
+            }
         }
-        
+
         if (ui_kbd_pressed(UI_KBD_KEYCODE_Q))
             break;
         
         vga_wait_retrace();
         
-        if (player.pd.y < 16)
-            player.pd.y += 1;
+        if (player.pd.y < PLAYER_VSPD_FALL_MAX)
+            player.pd.y += PLAYER_VSPD_FALL_ACC;
 
         collision = adjust_by_static_objects(&player);
 
@@ -276,14 +311,5 @@ int main(void) {
 
     ui_kbd_close();
     vga_close();
-/*
-    printf("--\n");
-    adjust_by_static_objects(&player);
-    player.pbox.y += player.pd.y;
-    
-    printf("--\n");
-    adjust_by_static_objects(&player);
-    player.pbox.y += player.pd.y;
-*/
     return 0;
 }
