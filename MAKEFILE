@@ -37,5 +37,5 @@ clean:
 
 # convert assets
 assets:
-    ..\gfxcnv\bmpcnv.exe test5.bmp test5.my
-    
+    $(BMPCNV) assets\deadbeef.bmp deadbeef.my
+    $(BMPCNV) assets\tiles.bmp tiles.my

@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAP_W                       16
+#define MAP_W                       20
 #define MAP_H                       10
 
 #define TILE_SCREEN_W               16
@@ -39,13 +39,17 @@ typedef struct sMapObject {
 
 typedef struct sMapTile {
     
-    hsVgaImage                      image;
+    unsigned char                   image;      // index to tile images
     char                            block;      // MAP_TILE_BLOCK_*
     
 } sMapTile, *hsMapTile;
 
-sVgaImage       tile_image_main;
-sVgaImage       tile_image[8];                  // images to be used in map tiles
+sVgaImage       img_deadbeef;
+hsVgaImage      img_deadbeef_parts;
+
+sVgaImage       img_tiles;
+hsVgaImage      img_tiles_parts;
+
 char            map_dirty[MAP_H][MAP_W];
 
 #define X____   0
@@ -64,21 +68,23 @@ char            map_dirty[MAP_H][MAP_W];
 #define XT_BL   (MAP_TILE_BLOCK_T | MAP_TILE_BLOCK_B | MAP_TILE_BLOCK_L)
 #define X_RBL   (MAP_TILE_BLOCK_R | MAP_TILE_BLOCK_B | MAP_TILE_BLOCK_L)
 
-#define __      &tile_image[0]
-#define TT      &tile_image[1]
-#define _9      &tile_image[2]
+#define __      (0)
+#define TT      (1)
+#define _9      (2)
+#define Bo      (3)
+#define oo      (4)
 
 sMapTile        map_tile[MAP_H][MAP_W] = {
-    { {__,XT__L}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XTR__} },
-    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
-    { {__,X___L}, {__,X____}, {__,X__B_}, {__,X____}, {__,X____}, {_9,X__B_}, {__,X__B_}, {__,X__B_}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
-    { {__,X___L}, {__,X_R__}, {TT,X____}, {__,X___L}, {__,X_R__}, {TT,X____}, {TT,X____}, {TT,X____}, {__,X___L}, {__,X__B_}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
-    { {__,X___L}, {__,X____}, {__,XT___}, {__,X____}, {__,X____}, {__,XT___}, {__,XT___}, {__,XT___}, {__,X_R__}, {TT,X____}, {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
-    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X__B_}, {__,XT___}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
-    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X__B_}, {__,X_R__}, {TT,X____}, {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
-    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__}, {TT,X____}, {__,X___L}, {__,XT___}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
-    { {__,X__BL}, {__,X__B_}, {_9,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,XT_B_}, {__,X__B_}, {_9,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X_RB_} },
-    { {TT,X___L}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X_R__} },
+    { {__,XT__L}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XTR__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,X__B_}, {__,X____}, {__,X____}, {_9,X__B_}, {__,X__B_}, {__,X__B_}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X_R__}, {TT,X____}, {__,X___L}, {__,X_R__}, {TT,X____}, {TT,X____}, {TT,X____}, {__,X___L}, {Bo,X__B_}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,XT___}, {__,X____}, {__,X____}, {__,XT___}, {__,XT___}, {__,XT___}, {__,X_R__}, {TT,X____}, {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X__B_}, {__,XT_B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {_9,X__B_}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X__B_}, {__,X_R__}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {oo,X____}, {TT,X____}, {TT,X____}, {__,X___L}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__}, {TT,X____}, {__,X___L}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
+    { {__,X__BL}, {__,X__B_}, {_9,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,XT_B_}, {__,X__B_}, {Bo,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X_RB_} },
+    { {TT,X___L}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X_R__} },
 /*
     { {__,XT__L}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XTR__} },
     { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
@@ -101,7 +107,7 @@ sMapObject      player = {
         SPACE_TILE2PHY(1) 
     }, 
     { 0, 0 },
-    &tile_image[3] 
+    NULL
 };
 
 void map_init(void) {
@@ -121,7 +127,7 @@ void map_redraw(void) {
         if (!map_dirty[y][x])
             continue;
             
-        vga_img_draw(map_tile[y][x].image, VGA_XY_TO_POS(SPACE_TILE2SCREEN(x), SPACE_TILE2SCREEN(y)));
+        vga_img_draw(img_tiles_parts + map_tile[y][x].image, VGA_XY_TO_POS(SPACE_TILE2SCREEN(x), SPACE_TILE2SCREEN(y)));
         map_dirty[y][x] = 0;
     }
     
@@ -235,27 +241,49 @@ char collision;
 
 int main(void) {
     
-    fp = fopen("test5.my", "rb");
-    err = vga_img_alloc_load(&tile_image_main, fp);
+    fp = fopen("tiles.my", "rb");
+    err = vga_img_alloc_load(&img_tiles, fp);
     fclose(fp);
     
     if (err != ERR_OK) {
         
-        printf("Error loading image: %d\n", (int)err);
+        printf("Error loading image (tiles): %d\n", (int)err);
         return -1;
     }
 
-    for (i = 0, j = 0; i < tile_image_main.h; i += 16, j += 1)
-        vga_img_create_from(&tile_image[j], &tile_image_main, i, 16);
-
-    vga_img_set_transparent(&tile_image[3], 5);
-    vga_img_set_transparent(&tile_image[4], 5);
+    fp = fopen("deadbeef.my", "rb");
+    err = vga_img_alloc_load(&img_deadbeef, fp);
+    fclose(fp);
     
+    if (err != ERR_OK) {
+        
+        printf("Error loading image (deadbeef): %d\n", (int)err);
+        return -1;
+    }
+
+    if (!(img_deadbeef_parts = (hsVgaImage)malloc(sizeof(sVgaImage) * (img_deadbeef.h / 16)))) {
+
+        printf("Error allocating image frames.\n");
+        return -1;
+    }
+    
+    vga_img_set_transparent(&img_deadbeef, 5);
+    for (i = 0; i < (img_deadbeef.h / 16); i++)
+        vga_img_create_from(img_deadbeef_parts + i, &img_deadbeef, 16 * i, 16);
+
+    if (!(img_tiles_parts = (hsVgaImage)malloc(sizeof(sVgaImage) * (img_tiles.h / 16)))) {
+
+        printf("Error allocating image frames.\n");
+        return -1;
+    }
+    
+    for (i = 0; i < (img_tiles.h / 16); i++)
+        vga_img_create_from(img_tiles_parts + i, &img_tiles, 16 * i, 16);
+
     vga_open();
     ui_kbd_init();
 
     map_init();
-    map_redraw();
     
     for (;;) {
 
@@ -307,12 +335,14 @@ int main(void) {
             map_dirty_by_bbox(&player.pbox);
         }
 
-        player.image = (collision & MAP_TILE_BLOCK_B) ? &tile_image[3] : &tile_image[4];
+        player.image = (collision & MAP_TILE_BLOCK_B) ? img_deadbeef_parts : img_deadbeef_parts + 1;
         
         map_redraw();
     }
 
-    vga_img_destroy(&tile_image_main);
+    free(img_deadbeef_parts);
+    vga_img_destroy(&img_tiles);
+    vga_img_destroy(&img_deadbeef);
 
     ui_kbd_close();
     vga_close();
