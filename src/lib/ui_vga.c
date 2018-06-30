@@ -27,6 +27,15 @@ void vga_close(void) { asm {
     int 10h
 }}
 
+// TODO - asm
+void vga_wait_retrace(void) {
+
+    while((inp(0x03da) & 0x08))
+        ;
+    while(!(inp(0x03da) & 0x08))
+        ;
+}
+
 void vga_pal_write(vga_color_index_t color, char r, char g, char b) { asm {
     
     mov DX, 03c8h

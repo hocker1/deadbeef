@@ -2,7 +2,7 @@
 
 # compiler
 CC=$(TCCDIR)\bin\tcc.exe
-CFLAGS=-1 -mc -g3 -j3 -G -d -O2 -Z -I$(TCCDIR)\include -Isrc -Isrc\lib
+CFLAGS=-1 -mc -g3 -j3 -G -d -O2 -Z -I$(TCCDIR)\include -Isrc -Isrc\lib -Isrc\game
 
 # linker
 TL=$(TCCDIR)\bin\tlink
@@ -28,7 +28,9 @@ cc
     $(CC) $(CFLAGS) -c $<
 {src\lib}.c.obj:
     $(CC) $(CFLAGS) -c $<
-
+{src\game}.c.obj:
+    $(CC) $(CFLAGS) -c $<
+    
 # clean obj files
 clean:
     del *.obj

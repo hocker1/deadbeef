@@ -36,9 +36,17 @@ typedef struct sVgaImgHeader {
 } sVgaImgHeader, *hsVgaImgHeader;
 typedef const sVgaImgHeader *hcsVgaImgHeader;
 
-// functions
-error_t vga_img_create_load(hsVgaImage img, FILE *fp);
+// alloc pairs with free
+error_t vga_img_alloc_load(hsVgaImage img, FILE *fp);
+void vga_img_free(hsVgaImage img);
+
+// create pairs with destroy
+error_t vga_img_create_raw(hsVgaImage img, void *data, vga_length_t w, vga_length_t h);
+error_t vga_img_create_from(hsVgaImage img, hsVgaImage src, vga_length_t offset, vga_length_t h);
 void vga_img_destroy(hsVgaImage img);
+
+// drawing functions
+void vga_img_set_transparent(hsVgaImage img, vga_color_index_t color);
 void vga_img_draw(hsVgaImage img, vga_position_t pos);
 
 #endif

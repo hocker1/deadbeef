@@ -18,6 +18,7 @@ typedef unsigned char vga_color_index_t;            // index to color palette
 // functions
 void vga_open(void);
 void vga_close(void);
+void vga_wait_retrace(void);
 void vga_pal_write(vga_color_index_t color, char r, char g, char b);
 void vga_draw_tn(const void *data, vga_position_t pos, vga_length_t w, vga_length_t h);
 void vga_draw_tc(const void *data, vga_position_t pos, vga_length_t w, vga_length_t h, vga_color_index_t color);

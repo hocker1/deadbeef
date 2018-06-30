@@ -1,7 +1,7 @@
 #include "vga_img.h"
 #include <stdlib.h>
 
-error_t vga_img_create_load(hsVgaImage img, FILE *fp) {
+error_t vga_img_alloc_load(hsVgaImage img, FILE *fp) {
     
     sVgaImgHeader hdr;
     
@@ -31,13 +31,44 @@ error_t vga_img_create_load(hsVgaImage img, FILE *fp) {
     return ERR_OK;
 }
 
-void vga_img_destroy(hsVgaImage img) {
+void vga_img_free(hsVgaImage img) {
     
     if (img->data != NULL) {
         
         free(img->data);
         img->data = NULL;
     }
+}
+
+error_t vga_img_create_raw(hsVgaImage img, void *data, vga_length_t w, vga_length_t h) {
+    
+    img->flags = 0;
+    img->transparency = 0;
+    img->w = w;
+    img->h = h;
+    img->data = data;
+    return ERR_OK;
+}
+
+error_t vga_img_create_from(hsVgaImage img, hsVgaImage src, vga_length_t offset, vga_length_t h) {
+    
+    img->flags = src->flags;
+    img->transparency = src->transparency;
+    img->w = src->w;
+    img->h = h;
+    img->data = (char*)src->data + offset * src->w;
+    return ERR_OK;
+}
+
+void vga_img_destroy(hsVgaImage img) {
+    
+    img->data = NULL;
+}
+
+void vga_img_set_transparent(hsVgaImage img, vga_color_index_t color) {
+
+    img->flags |= VGA_IMG_FLG_TRANSPARENT;
+    img->transparency = color;
 }
 
 void vga_img_draw(hsVgaImage img, vga_position_t pos) {
