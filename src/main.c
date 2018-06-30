@@ -93,7 +93,7 @@ sMapTile        map_tile[MAP_H][MAP_W] = {
 */ 
 };
 
-sMapObject      player = { 
+sMapObject      player = {
     { 
         SPACE_TILE2PHY(0), 
         SPACE_TILE2PHY(0),
@@ -141,7 +141,8 @@ char adjust_by_static_objects(hsMapObject obj) {
     char collision = 0;
     physpace_pos_t pold, pnew;
     hsMapTile t1, t2;
-    
+
+    // handle vertical part of the movement
     if (obj->pd.y > 0) {
         
         pold = obj->pbox.y + obj->pbox.h - 1;
@@ -178,6 +179,7 @@ char adjust_by_static_objects(hsMapObject obj) {
         }
     }
 
+    // handle horizontal part of the movement
     if (obj->pd.x > 0) {
 
         pold = obj->pbox.x + obj->pbox.w - 1;
@@ -227,7 +229,7 @@ char collision;
 #define PLAYER_HSPD_WALK_MAX            16
 #define PLAYER_HSPD_WALK_ACC            2
 #define PLAYER_HSPD_JUMP_ACC            1
-#define PLAYER_VSPD_FALL_MAX            16
+#define PLAYER_VSPD_FALL_MAX            24
 #define PLAYER_VSPD_FALL_ACC            1
 #define PLAYER_VSPD_JUMP_ACC            33
 
@@ -247,6 +249,7 @@ int main(void) {
         vga_img_create_from(&tile_image[j], &tile_image_main, i, 16);
 
     vga_img_set_transparent(&tile_image[3], 5);
+    vga_img_set_transparent(&tile_image[4], 5);
     
     vga_open();
     ui_kbd_init();
@@ -303,6 +306,8 @@ int main(void) {
             player.pbox.x += player.pd.x;
             map_dirty_by_bbox(&player.pbox);
         }
+
+        player.image = (collision & MAP_TILE_BLOCK_B) ? &tile_image[3] : &tile_image[4];
         
         map_redraw();
     }
