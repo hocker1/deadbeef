@@ -40,8 +40,4 @@ typedef struct sPhyVector {
     
 } sPhyVector, *hsPhyVector;
 
-// collision detection routines
-//bool_t coll_ranges(hsPhyRange r1, hsPhyRange r2);
-//bool_t coll_hline_vec_hline(hsPhyRange rm, physpace_pos_t ym, hsPhyVector vm, hsPhyRange rs, physpace_pos_t ys, unsigned int *fraction);
-
 #endif

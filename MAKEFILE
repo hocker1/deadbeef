@@ -12,6 +12,7 @@ OBJS=\
 ui_kbd.obj \
 ui_vga.obj \
 vga_img.obj \
+anim.obj \
 main.obj
 
 # default rule

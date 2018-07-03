@@ -3,6 +3,7 @@
 #include "vga_img.h"
 #include "utils.h"
 #include "types.h"
+#include "anim.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -33,8 +34,12 @@ typedef struct sMapObject {
 
     sPhyBox                         pbox;       // object's position box
     sPhyVector                      pd;         // current speed
+    sPhyVector                      pbox2image; // vector from pbox to image origin
     hsVgaImage                      image;      // object image
-
+    
+    hsAnimationPhase                anim_first;
+    sAnimationState                 anim_state;
+    
 } sMapObject, *hsMapObject;
 
 typedef struct sMapTile {
@@ -82,8 +87,8 @@ sMapTile        map_tile[MAP_H][MAP_W] = {
     { {__,X___L}, {__,X____}, {__,XT___}, {__,X____}, {__,X____}, {__,XT___}, {__,XT___}, {__,XT___}, {__,X_R__}, {TT,X____}, {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
     { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X__B_}, {__,XT_B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {_9,X__B_}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
     { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X__B_}, {__,X_R__}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {oo,X____}, {TT,X____}, {TT,X____}, {__,X___L}, {__,X____}, {__,X____}, {__,X_R__} },
-    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__}, {TT,X____}, {__,X___L}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__} },
-    { {__,X__BL}, {__,X__B_}, {_9,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,XT_B_}, {__,X__B_}, {Bo,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X_RB_} },
+    { {__,X___L}, {__,X____}, {__,X____}, {__,X____}, {__,X____}, {__,X_R__}, {TT,X____}, {__,X___L}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,X____}, {__,X____}, {__,X____}, {__,XT___}, {__,X____}, {__,X____}, {__,X____}, {__,X_RB_} },
+    { {__,X__BL}, {__,X__B_}, {_9,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,XT_B_}, {__,X__B_}, {Bo,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X__B_}, {__,X_RB_}, {TT,X_RB_} },
     { {TT,X___L}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X____}, {TT,X_R__} },
 /*
     { {__,XT__L}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XT___}, {__,XTR__} },
@@ -99,15 +104,28 @@ sMapTile        map_tile[MAP_H][MAP_W] = {
 */ 
 };
 
-sMapObject      player = {
+sAnimationPhase player_anim[] = {
+    { 0,    300,    1 },            // stand calm
+    { 2,    10,     1 },            // stand calm, wink
+    { 0,    180,    1 },            // stand calm
+    { 2,    10,     1 },            // stand calm, wink
+    { 0,    10,     1 },            // stand calm
+    { 2,    10,     -5 },           // stand calm, wink
+    { 1,    1,      0 }             // jump / fall
+};
+
+sMapObject player = {
     { 
-        SPACE_TILE2PHY(0), 
-        SPACE_TILE2PHY(0),
         SPACE_TILE2PHY(1), 
-        SPACE_TILE2PHY(1) 
+        SPACE_TILE2PHY(0),
+        SPACE_TILE2PHY(1) - SPACE_SCREEN2PHY(8), 
+        SPACE_TILE2PHY(1)
     }, 
     { 0, 0 },
-    NULL
+    { -SPACE_SCREEN2PHY(4), 0 },
+    NULL,
+    player_anim,
+    { 0, 1 }
 };
 
 void map_init(void) {
@@ -131,7 +149,7 @@ void map_redraw(void) {
         map_dirty[y][x] = 0;
     }
     
-    vga_img_draw(player.image, VGA_XY_TO_POS(SPACE_PHY2SCREEN(player.pbox.x), SPACE_PHY2SCREEN(player.pbox.y)));
+    vga_img_draw(player.image, VGA_XY_TO_POS(SPACE_PHY2SCREEN(player.pbox.x + player.pbox2image.x), SPACE_PHY2SCREEN(player.pbox.y + player.pbox2image.y)));
 }
 
 void map_dirty_by_bbox(hsPhyBox b) {
@@ -140,6 +158,21 @@ void map_dirty_by_bbox(hsPhyBox b) {
     map_dirty[SPACE_PHY2TILE(b->y + b->h - 1)][SPACE_PHY2TILE(b->x)] = 1;
     map_dirty[SPACE_PHY2TILE(b->y)][SPACE_PHY2TILE(b->x + b->w - 1)] = 1;
     map_dirty[SPACE_PHY2TILE(b->y + b->h - 1)][SPACE_PHY2TILE(b->x + b->w - 1)] = 1;
+}
+
+void map_dirty_by_object(hsMapObject obj) {
+    
+    hsPhyVector v = &obj->pbox2image;
+    hsPhyBox b = &obj->pbox;
+    physpace_pos_t x = b->x + v->x;
+    physpace_pos_t y = b->y + v->y;
+    physpace_pos_t w = SPACE_SCREEN2PHY(obj->image->w) - 1;
+    physpace_pos_t h = SPACE_SCREEN2PHY(obj->image->h) - 1;
+    
+    map_dirty[SPACE_PHY2TILE(y)][SPACE_PHY2TILE(x)] = 1;
+    map_dirty[SPACE_PHY2TILE(y)][SPACE_PHY2TILE(x + w)] = 1;
+    map_dirty[SPACE_PHY2TILE(y + h)][SPACE_PHY2TILE(x)] = 1;
+    map_dirty[SPACE_PHY2TILE(y + h)][SPACE_PHY2TILE(x + w)] = 1;
 }
 
 char adjust_by_static_objects(hsMapObject obj) {
@@ -229,7 +262,7 @@ unsigned int i, j, x, y;
 FILE *fp;
 error_t err;
 keycode_t keycode;
-char collision;
+char collision, collision_prev;
 
 // movement speed constants
 #define PLAYER_HSPD_WALK_MAX            16
@@ -284,6 +317,8 @@ int main(void) {
     ui_kbd_init();
 
     map_init();
+
+    collision_prev = 0xff;
     
     for (;;) {
 
@@ -329,13 +364,31 @@ int main(void) {
 
         if (player.pd.y != 0 || player.pd.x != 0) {
             
-            map_dirty_by_bbox(&player.pbox);
+            map_dirty_by_object(&player);
             player.pbox.y += player.pd.y;
             player.pbox.x += player.pd.x;
-            map_dirty_by_bbox(&player.pbox);
+            map_dirty_by_object(&player);
         }
 
-        player.image = (collision & MAP_TILE_BLOCK_B) ? img_deadbeef_parts : img_deadbeef_parts + 1;
+        if ((collision & MAP_TILE_BLOCK_B) && !(collision_prev & MAP_TILE_BLOCK_B)) {
+            
+            if (anim_go_phase(&player.anim_state, player.anim_first, 0) == TRUE)
+                map_dirty_by_object(&player);
+        }
+        else
+        if (!(collision & MAP_TILE_BLOCK_B) && (collision_prev & MAP_TILE_BLOCK_B)) {
+
+            if (anim_go_phase(&player.anim_state, player.anim_first, 6) == TRUE)
+                map_dirty_by_object(&player);
+        }
+
+        collision_prev = collision;
+
+        if (anim_tick(&player.anim_state, player.anim_first) == TRUE)
+            map_dirty_by_object(&player);
+        
+//        player.image = (collision & MAP_TILE_BLOCK_B) ? img_deadbeef_parts : img_deadbeef_parts + 1;
+        player.image = &img_deadbeef_parts[player.anim_first[player.anim_state.phase].value];
         
         map_redraw();
     }
