@@ -247,7 +247,7 @@ unsigned int i, j;
 FILE *fp;
 error_t err;
 keycode_t keycode;
-char collision, collision_prev;
+char collision;
 
 // movement speed constants
 #define PLAYER_HSPD_WALK_MAX            16
@@ -305,8 +305,6 @@ int main(void) {
 
     map_init();
 
-    collision_prev = 0xff;
-    
     for (;;) {
 
         // walking left and right
@@ -354,24 +352,24 @@ int main(void) {
             player.position.x += player.speed.x;
             map_dirty_by_object(&player);
         }
+        
+        // determine and update player state
+        if (collision & MAP_TILE_BLOCK_B) {
 
-        if ((collision & MAP_TILE_BLOCK_B) && !(collision_prev & MAP_TILE_BLOCK_B)) {
-            
-            if (anim_go_phase(&player.anim_state, player.type->animation, 0) == TRUE)
-                map_dirty_by_object(&player);
+            // standing on ground, maybe walking
+            gobj_go_state(&player, player.speed.x ? 1 : 0);
         }
-        else
-        if (!(collision & MAP_TILE_BLOCK_B) && (collision_prev & MAP_TILE_BLOCK_B)) {
+        else {
 
-            if (anim_go_phase(&player.anim_state, player.type->animation, 6) == TRUE)
-                map_dirty_by_object(&player);
+            // flying up or down
+            gobj_go_state(&player, 2);
         }
 
-        collision_prev = collision;
-
+        // perform player animation tick
         if (anim_tick(&player.anim_state, player.type->animation) == TRUE)
             map_dirty_by_object(&player);
         
+        // do the drawing...
         vga_wait_retrace();
         map_redraw();
     }
