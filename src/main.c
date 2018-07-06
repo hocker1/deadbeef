@@ -152,14 +152,6 @@ void map_redraw(void) {
     vga_img_draw(player.image, VGA_XY_TO_POS(SPACE_PHY2SCREEN(player.pbox.x + player.pbox2image.x), SPACE_PHY2SCREEN(player.pbox.y + player.pbox2image.y)));
 }
 
-void map_dirty_by_bbox(hsPhyBox b) {
-    
-    map_dirty[SPACE_PHY2TILE(b->y)][SPACE_PHY2TILE(b->x)] = 1;
-    map_dirty[SPACE_PHY2TILE(b->y + b->h - 1)][SPACE_PHY2TILE(b->x)] = 1;
-    map_dirty[SPACE_PHY2TILE(b->y)][SPACE_PHY2TILE(b->x + b->w - 1)] = 1;
-    map_dirty[SPACE_PHY2TILE(b->y + b->h - 1)][SPACE_PHY2TILE(b->x + b->w - 1)] = 1;
-}
-
 void map_dirty_by_object(hsMapObject obj) {
     
     hsPhyVector v = &obj->pbox2image;
@@ -258,7 +250,7 @@ char adjust_by_static_objects(hsMapObject obj) {
     return collision;
 }
 
-unsigned int i, j, x, y;
+unsigned int i, j;
 FILE *fp;
 error_t err;
 keycode_t keycode;
@@ -355,8 +347,6 @@ int main(void) {
         if (ui_kbd_pressed(UI_KBD_KEYCODE_Q))
             break;
         
-        vga_wait_retrace();
-        
         if (player.pd.y < PLAYER_VSPD_FALL_MAX)
             player.pd.y += PLAYER_VSPD_FALL_ACC;
 
@@ -387,9 +377,9 @@ int main(void) {
         if (anim_tick(&player.anim_state, player.anim_first) == TRUE)
             map_dirty_by_object(&player);
         
-//        player.image = (collision & MAP_TILE_BLOCK_B) ? img_deadbeef_parts : img_deadbeef_parts + 1;
         player.image = &img_deadbeef_parts[player.anim_first[player.anim_state.phase].value];
         
+        vga_wait_retrace();
         map_redraw();
     }
 

@@ -19,4 +19,5 @@ bool_t anim_go_phase(hsAnimationState s, hsAnimationPhase first, animation_index
     
     s->phase = index;
     s->ticks = first[s->phase].duration;
+    return TRUE;
 }
