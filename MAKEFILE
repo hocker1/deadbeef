@@ -13,6 +13,7 @@ ui_kbd.obj \
 ui_vga.obj \
 vga_img.obj \
 anim.obj \
+gobj.obj \
 main.obj
 
 # default rule

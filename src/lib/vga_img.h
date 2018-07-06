@@ -47,6 +47,6 @@ void vga_img_destroy(hsVgaImage img);
 
 // drawing functions
 void vga_img_set_transparent(hsVgaImage img, vga_color_index_t color);
-void vga_img_draw(hsVgaImage img, vga_position_t pos);
+void vga_img_draw(hcsVgaImage img, vga_position_t pos);
 
 #endif

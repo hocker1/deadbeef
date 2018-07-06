@@ -13,6 +13,7 @@ typedef struct sAnimationPhase {
     animation_index_t       next;               // relative jump to another phase
     
 } sAnimationPhase, *hsAnimationPhase;
+typedef const sAnimationPhase *hcsAnimationPhase;
 
 typedef struct sAnimationState {
     
@@ -20,8 +21,9 @@ typedef struct sAnimationState {
     animation_duration_t    ticks;              // remaining ticks to next phase
     
 } sAnimationState, *hsAnimationState;
+typedef const sAnimationState *hcsAnimationState;
 
-bool_t anim_tick(hsAnimationState s, hsAnimationPhase first);
-bool_t anim_go_phase(hsAnimationState s, hsAnimationPhase first, animation_index_t index);
+bool_t anim_tick(hsAnimationState s, hcsAnimationPhase first);
+bool_t anim_go_phase(hsAnimationState s, hcsAnimationPhase first, animation_index_t index);
 
 #endif

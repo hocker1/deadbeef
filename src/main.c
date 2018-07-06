@@ -80,7 +80,7 @@ sMapTile        map_tile[MAP_H][MAP_W] = {
 */ 
 };
 
-sAnimationPhase player_anim[] = {
+const sAnimationPhase player_anim[] = {
     { 0,    300,    1 },            // stand calm
     { 2,    10,     1 },            // stand calm, wink
     { 0,    180,    1 },            // stand calm
@@ -90,9 +90,16 @@ sAnimationPhase player_anim[] = {
     { 1,    1,      0 }             // jump / fall
 };
 
+const sGameObjectState player_states[] = {
+    { 0 },                          // stand
+    { 0 },                          // go
+    { 6 }                           // jump / fall
+};
+        
 sGameObjectType ot_player = {
     { SPACE_TILE2PHY(1) - SPACE_SCREEN2PHY(8), SPACE_TILE2PHY(1) }, 
     { -SPACE_SCREEN2PHY(4), 0 },
+    player_states,
     player_anim,
     NULL
 };
@@ -133,7 +140,7 @@ void map_redraw(void) {
 void map_dirty_by_object(hsGameObject obj) {
 
     hcsGameObjectType ot;
-    hsVgaImage img;
+    hcsVgaImage img;
     physpace_pos_t x, y, w, h;
     
     ot = obj->type;

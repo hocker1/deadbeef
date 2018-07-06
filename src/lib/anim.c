@@ -1,7 +1,7 @@
 #include "anim.h"
 #include "utils.h"
 
-bool_t anim_tick(hsAnimationState s, hsAnimationPhase first) {
+bool_t anim_tick(hsAnimationState s, hcsAnimationPhase first) {
     
     s->ticks--;
     if (s->ticks > 0)
@@ -12,7 +12,7 @@ bool_t anim_tick(hsAnimationState s, hsAnimationPhase first) {
     return TRUE;
 }
 
-bool_t anim_go_phase(hsAnimationState s, hsAnimationPhase first, animation_index_t index) {
+bool_t anim_go_phase(hsAnimationState s, hcsAnimationPhase first, animation_index_t index) {
     
     if (index == s->phase)
         return FALSE;
