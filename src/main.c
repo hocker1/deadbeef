@@ -10,9 +10,6 @@
 #define MAP_W                       20
 #define MAP_H                       10
 
-#define TILE_SCREEN_W               16
-#define TILE_SCREEN_H               16
-
 #define for_each_map_tile(x, y)     for (y = 0; y < MAP_H; y++) for (x = 0; x < MAP_W; x++)
 
 #define MAP_TILE_BLOCK_T            0x01        // tile may not be leaved by object in the direction upwards
@@ -20,24 +17,21 @@
 #define MAP_TILE_BLOCK_B            0x04        // tile may not be leaved by object in the direction downwards
 #define MAP_TILE_BLOCK_L            0x08        // tile may not be leaved by object in the direction left
 
-// box that represents space occupied by an object in physical space
-typedef struct sPhyBox {
-
-    physpace_pos_t                  x;
-    physpace_pos_t                  y;
-    physpace_pos_t                  w;
-    physpace_pos_t                  h;
-
-} sPhyBox, *hsPhyBox;
+typedef struct sGameObjectType {
+    
+    sPhyVector                      size;       // object dimensions (bounding box)
+    sPhyVector                      pivot;      // vector from current position to image origin
+    hsAnimationPhase                animation;  // array of all animations frames
+    hsVgaImage                      image;      // array of all images
+    
+} sGameObjectType, *hsGameObjectType;
+typedef const sGameObjectType *hcsGameObjectType;
 
 typedef struct sMapObject {
 
-    sPhyBox                         pbox;       // object's position box
+    hcsGameObjectType               type;       // object type
+    sPhyVector                      position;   // current position
     sPhyVector                      pd;         // current speed
-    sPhyVector                      pbox2image; // vector from pbox to image origin
-    hsVgaImage                      image;      // object image
-    
-    hsAnimationPhase                anim_first;
     sAnimationState                 anim_state;
     
 } sMapObject, *hsMapObject;
@@ -114,17 +108,17 @@ sAnimationPhase player_anim[] = {
     { 1,    1,      0 }             // jump / fall
 };
 
-sMapObject player = {
-    { 
-        SPACE_TILE2PHY(1), 
-        SPACE_TILE2PHY(0),
-        SPACE_TILE2PHY(1) - SPACE_SCREEN2PHY(8), 
-        SPACE_TILE2PHY(1)
-    }, 
-    { 0, 0 },
+sGameObjectType ot_player = {
+    { SPACE_TILE2PHY(1) - SPACE_SCREEN2PHY(8), SPACE_TILE2PHY(1) }, 
     { -SPACE_SCREEN2PHY(4), 0 },
-    NULL,
     player_anim,
+    NULL
+};
+
+sMapObject player = {
+    &ot_player,
+    { SPACE_TILE2PHY(1), SPACE_TILE2PHY(0) },
+    { 0, 0 },
     { 0, 1 }
 };
 
@@ -139,6 +133,7 @@ void map_init(void) {
 void map_redraw(void) {
     
     tilespace_pos_t x, y;
+    hcsGameObjectType ot;
     
     for_each_map_tile(x, y) {
         
@@ -149,17 +144,23 @@ void map_redraw(void) {
         map_dirty[y][x] = 0;
     }
     
-    vga_img_draw(player.image, VGA_XY_TO_POS(SPACE_PHY2SCREEN(player.pbox.x + player.pbox2image.x), SPACE_PHY2SCREEN(player.pbox.y + player.pbox2image.y)));
+    ot = player.type;
+    vga_img_draw(ot->image + (ot->animation + player.anim_state.phase)->value, VGA_XY_TO_POS(SPACE_PHY2SCREEN(player.position.x + ot->pivot.x), SPACE_PHY2SCREEN(player.position.y + ot->pivot.y)));
 }
 
 void map_dirty_by_object(hsMapObject obj) {
+
+    hcsGameObjectType ot;
+    hsVgaImage img;
+    physpace_pos_t x, y, w, h;
     
-    hsPhyVector v = &obj->pbox2image;
-    hsPhyBox b = &obj->pbox;
-    physpace_pos_t x = b->x + v->x;
-    physpace_pos_t y = b->y + v->y;
-    physpace_pos_t w = SPACE_SCREEN2PHY(obj->image->w) - 1;
-    physpace_pos_t h = SPACE_SCREEN2PHY(obj->image->h) - 1;
+    ot = obj->type;
+    img = ot->image + (ot->animation + obj->anim_state.phase)->value;
+    
+    x = obj->position.x + ot->pivot.x;
+    y = obj->position.y + ot->pivot.y;
+    w = SPACE_SCREEN2PHY(img->w) - 1;
+    h = SPACE_SCREEN2PHY(img->h) - 1;
     
     map_dirty[SPACE_PHY2TILE(y)][SPACE_PHY2TILE(x)] = 1;
     map_dirty[SPACE_PHY2TILE(y)][SPACE_PHY2TILE(x + w)] = 1;
@@ -172,17 +173,20 @@ char adjust_by_static_objects(hsMapObject obj) {
     char collision = 0;
     physpace_pos_t pold, pnew;
     hsMapTile t1, t2;
+    hcsGameObjectType ot;
 
+    ot = obj->type;
+    
     // handle vertical part of the movement
     if (obj->pd.y > 0) {
         
-        pold = obj->pbox.y + obj->pbox.h - 1;
+        pold = obj->position.y + ot->size.y - 1;
         pnew = SPACE_PHY2TILE(pold + obj->pd.y);
 
         if (SPACE_PHY2TILE(pold) != pnew) {
             
-            t1 = &map_tile[SPACE_PHY2TILE(pold)][SPACE_PHY2TILE(obj->pbox.x)];
-            t2 = &map_tile[SPACE_PHY2TILE(pold)][SPACE_PHY2TILE(obj->pbox.x + obj->pbox.w - 1)];
+            t1 = &map_tile[SPACE_PHY2TILE(pold)][SPACE_PHY2TILE(obj->position.x)];
+            t2 = &map_tile[SPACE_PHY2TILE(pold)][SPACE_PHY2TILE(obj->position.x + ot->size.x - 1)];
             
             if ((t1->block | t2->block) & MAP_TILE_BLOCK_B) {
                 
@@ -194,17 +198,17 @@ char adjust_by_static_objects(hsMapObject obj) {
     else
     if (obj->pd.y < 0) {
         
-        pold = SPACE_PHY2TILE(obj->pbox.y);
-        pnew = obj->pbox.y + obj->pd.y;
+        pold = SPACE_PHY2TILE(obj->position.y);
+        pnew = obj->position.y + obj->pd.y;
 
         if (pold != SPACE_PHY2TILE(pnew)) {
             
-            t1 = &map_tile[pold][SPACE_PHY2TILE(obj->pbox.x)];
-            t2 = &map_tile[pold][SPACE_PHY2TILE(obj->pbox.x + obj->pbox.w - 1)];
+            t1 = &map_tile[pold][SPACE_PHY2TILE(obj->position.x)];
+            t2 = &map_tile[pold][SPACE_PHY2TILE(obj->position.x + ot->size.x - 1)];
             
             if ((t1->block | t2->block) & MAP_TILE_BLOCK_T) {
                 
-                obj->pd.y = SPACE_TILE2PHY(pold) - obj->pbox.y;
+                obj->pd.y = SPACE_TILE2PHY(pold) - obj->position.y;
                 collision |= MAP_TILE_BLOCK_T;
             }
         }
@@ -213,13 +217,13 @@ char adjust_by_static_objects(hsMapObject obj) {
     // handle horizontal part of the movement
     if (obj->pd.x > 0) {
 
-        pold = obj->pbox.x + obj->pbox.w - 1;
+        pold = obj->position.x + ot->size.x - 1;
         pnew = SPACE_PHY2TILE(pold + obj->pd.x);
 
         if (SPACE_PHY2TILE(pold) != pnew) {
             
-            t1 = &map_tile[SPACE_PHY2TILE(obj->pbox.y)][SPACE_PHY2TILE(pold)];
-            t2 = &map_tile[SPACE_PHY2TILE(obj->pbox.y + obj->pbox.h - 1)][SPACE_PHY2TILE(pold)];
+            t1 = &map_tile[SPACE_PHY2TILE(obj->position.y)][SPACE_PHY2TILE(pold)];
+            t2 = &map_tile[SPACE_PHY2TILE(obj->position.y + ot->size.y - 1)][SPACE_PHY2TILE(pold)];
             
             if ((t1->block | t2->block) & MAP_TILE_BLOCK_R) {
                 
@@ -231,17 +235,17 @@ char adjust_by_static_objects(hsMapObject obj) {
     else
     if (obj->pd.x < 0) {
         
-        pold = SPACE_PHY2TILE(obj->pbox.x);
-        pnew = obj->pbox.x + obj->pd.x;
+        pold = SPACE_PHY2TILE(obj->position.x);
+        pnew = obj->position.x + obj->pd.x;
 
         if (pold != SPACE_PHY2TILE(pnew)) {
             
-            t1 = &map_tile[SPACE_PHY2TILE(obj->pbox.y)][pold];
-            t2 = &map_tile[SPACE_PHY2TILE(obj->pbox.y + obj->pbox.h - 1)][pold];
+            t1 = &map_tile[SPACE_PHY2TILE(obj->position.y)][pold];
+            t2 = &map_tile[SPACE_PHY2TILE(obj->position.y + ot->size.y - 1)][pold];
             
             if ((t1->block | t2->block) & MAP_TILE_BLOCK_L) {
                 
-                obj->pd.x = SPACE_TILE2PHY(pold) - obj->pbox.x;
+                obj->pd.x = SPACE_TILE2PHY(pold) - obj->position.x;
                 collision |= MAP_TILE_BLOCK_L;
             }
         }
@@ -265,7 +269,7 @@ char collision, collision_prev;
 #define PLAYER_VSPD_JUMP_ACC            33
 
 int main(void) {
-    
+
     fp = fopen("tiles.my", "rb");
     err = vga_img_alloc_load(&img_tiles, fp);
     fclose(fp);
@@ -296,6 +300,8 @@ int main(void) {
     for (i = 0; i < (img_deadbeef.h / 16); i++)
         vga_img_create_from(img_deadbeef_parts + i, &img_deadbeef, 16 * i, 16);
 
+    ot_player.image = img_deadbeef_parts;
+    
     if (!(img_tiles_parts = (hsVgaImage)malloc(sizeof(sVgaImage) * (img_tiles.h / 16)))) {
 
         printf("Error allocating image frames.\n");
@@ -355,29 +361,27 @@ int main(void) {
         if (player.pd.y != 0 || player.pd.x != 0) {
             
             map_dirty_by_object(&player);
-            player.pbox.y += player.pd.y;
-            player.pbox.x += player.pd.x;
+            player.position.y += player.pd.y;
+            player.position.x += player.pd.x;
             map_dirty_by_object(&player);
         }
 
         if ((collision & MAP_TILE_BLOCK_B) && !(collision_prev & MAP_TILE_BLOCK_B)) {
             
-            if (anim_go_phase(&player.anim_state, player.anim_first, 0) == TRUE)
+            if (anim_go_phase(&player.anim_state, player.type->animation, 0) == TRUE)
                 map_dirty_by_object(&player);
         }
         else
         if (!(collision & MAP_TILE_BLOCK_B) && (collision_prev & MAP_TILE_BLOCK_B)) {
 
-            if (anim_go_phase(&player.anim_state, player.anim_first, 6) == TRUE)
+            if (anim_go_phase(&player.anim_state, player.type->animation, 6) == TRUE)
                 map_dirty_by_object(&player);
         }
 
         collision_prev = collision;
 
-        if (anim_tick(&player.anim_state, player.anim_first) == TRUE)
+        if (anim_tick(&player.anim_state, player.type->animation) == TRUE)
             map_dirty_by_object(&player);
-        
-        player.image = &img_deadbeef_parts[player.anim_first[player.anim_state.phase].value];
         
         vga_wait_retrace();
         map_redraw();
@@ -389,5 +393,6 @@ int main(void) {
 
     ui_kbd_close();
     vga_close();
+
     return 0;
 }

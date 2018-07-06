@@ -26,13 +26,6 @@ typedef struct sPhyPosition {
     
 } sPhyPosition, *hsPhyPosition;
 
-typedef struct sPhyRange {
-    
-    physpace_pos_t          p1;
-    physpace_pos_t          p2;
-    
-} sPhyRange, *hsPhyRange;
-
 typedef struct sPhyVector {
     
     physpace_vec_t          x;
