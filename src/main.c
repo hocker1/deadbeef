@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "types.h"
 #include "anim.h"
+#include "gobj.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -16,25 +17,6 @@
 #define MAP_TILE_BLOCK_R            0x02        // tile may not be leaved by object in the direction right
 #define MAP_TILE_BLOCK_B            0x04        // tile may not be leaved by object in the direction downwards
 #define MAP_TILE_BLOCK_L            0x08        // tile may not be leaved by object in the direction left
-
-typedef struct sGameObjectType {
-    
-    sPhyVector                      size;       // object dimensions (bounding box)
-    sPhyVector                      pivot;      // vector from current position to image origin
-    hsAnimationPhase                animation;  // array of all animations frames
-    hsVgaImage                      image;      // array of all images
-    
-} sGameObjectType, *hsGameObjectType;
-typedef const sGameObjectType *hcsGameObjectType;
-
-typedef struct sMapObject {
-
-    hcsGameObjectType               type;       // object type
-    sPhyVector                      position;   // current position
-    sPhyVector                      pd;         // current speed
-    sAnimationState                 anim_state;
-    
-} sMapObject, *hsMapObject;
 
 typedef struct sMapTile {
     
@@ -115,7 +97,7 @@ sGameObjectType ot_player = {
     NULL
 };
 
-sMapObject player = {
+sGameObject player = {
     &ot_player,
     { SPACE_TILE2PHY(1), SPACE_TILE2PHY(0) },
     { 0, 0 },
@@ -148,7 +130,7 @@ void map_redraw(void) {
     vga_img_draw(ot->image + (ot->animation + player.anim_state.phase)->value, VGA_XY_TO_POS(SPACE_PHY2SCREEN(player.position.x + ot->pivot.x), SPACE_PHY2SCREEN(player.position.y + ot->pivot.y)));
 }
 
-void map_dirty_by_object(hsMapObject obj) {
+void map_dirty_by_object(hsGameObject obj) {
 
     hcsGameObjectType ot;
     hsVgaImage img;
@@ -168,7 +150,7 @@ void map_dirty_by_object(hsMapObject obj) {
     map_dirty[SPACE_PHY2TILE(y + h)][SPACE_PHY2TILE(x + w)] = 1;
 }
 
-char adjust_by_static_objects(hsMapObject obj) {
+char adjust_by_static_objects(hsGameObject obj) {
     
     char collision = 0;
     physpace_pos_t pold, pnew;
@@ -178,10 +160,10 @@ char adjust_by_static_objects(hsMapObject obj) {
     ot = obj->type;
     
     // handle vertical part of the movement
-    if (obj->pd.y > 0) {
+    if (obj->speed.y > 0) {
         
         pold = obj->position.y + ot->size.y - 1;
-        pnew = SPACE_PHY2TILE(pold + obj->pd.y);
+        pnew = SPACE_PHY2TILE(pold + obj->speed.y);
 
         if (SPACE_PHY2TILE(pold) != pnew) {
             
@@ -190,16 +172,16 @@ char adjust_by_static_objects(hsMapObject obj) {
             
             if ((t1->block | t2->block) & MAP_TILE_BLOCK_B) {
                 
-                obj->pd.y = SPACE_TILE2PHY(pnew) - pold - 1;
+                obj->speed.y = SPACE_TILE2PHY(pnew) - pold - 1;
                 collision |= MAP_TILE_BLOCK_B;
             }
         }
     }
     else
-    if (obj->pd.y < 0) {
+    if (obj->speed.y < 0) {
         
         pold = SPACE_PHY2TILE(obj->position.y);
-        pnew = obj->position.y + obj->pd.y;
+        pnew = obj->position.y + obj->speed.y;
 
         if (pold != SPACE_PHY2TILE(pnew)) {
             
@@ -208,17 +190,17 @@ char adjust_by_static_objects(hsMapObject obj) {
             
             if ((t1->block | t2->block) & MAP_TILE_BLOCK_T) {
                 
-                obj->pd.y = SPACE_TILE2PHY(pold) - obj->position.y;
+                obj->speed.y = SPACE_TILE2PHY(pold) - obj->position.y;
                 collision |= MAP_TILE_BLOCK_T;
             }
         }
     }
 
     // handle horizontal part of the movement
-    if (obj->pd.x > 0) {
+    if (obj->speed.x > 0) {
 
         pold = obj->position.x + ot->size.x - 1;
-        pnew = SPACE_PHY2TILE(pold + obj->pd.x);
+        pnew = SPACE_PHY2TILE(pold + obj->speed.x);
 
         if (SPACE_PHY2TILE(pold) != pnew) {
             
@@ -227,16 +209,16 @@ char adjust_by_static_objects(hsMapObject obj) {
             
             if ((t1->block | t2->block) & MAP_TILE_BLOCK_R) {
                 
-                obj->pd.x = SPACE_TILE2PHY(pnew) - pold - 1;
+                obj->speed.x = SPACE_TILE2PHY(pnew) - pold - 1;
                 collision |= MAP_TILE_BLOCK_R;
             }
         }
     }
     else
-    if (obj->pd.x < 0) {
+    if (obj->speed.x < 0) {
         
         pold = SPACE_PHY2TILE(obj->position.x);
-        pnew = obj->position.x + obj->pd.x;
+        pnew = obj->position.x + obj->speed.x;
 
         if (pold != SPACE_PHY2TILE(pnew)) {
             
@@ -245,7 +227,7 @@ char adjust_by_static_objects(hsMapObject obj) {
             
             if ((t1->block | t2->block) & MAP_TILE_BLOCK_L) {
                 
-                obj->pd.x = SPACE_TILE2PHY(pold) - obj->position.x;
+                obj->speed.x = SPACE_TILE2PHY(pold) - obj->position.x;
                 collision |= MAP_TILE_BLOCK_L;
             }
         }
@@ -323,20 +305,20 @@ int main(void) {
         // walking left and right
         if (ui_kbd_pressed(UI_KBD_KEYCODE_CRSR_LEFT) && !ui_kbd_pressed(UI_KBD_KEYCODE_CRSR_RIGHT)) {
 
-            player.pd.x -= (collision & MAP_TILE_BLOCK_B) ? PLAYER_HSPD_WALK_ACC : PLAYER_HSPD_JUMP_ACC;
-            if (player.pd.x < -PLAYER_HSPD_WALK_MAX)
-                player.pd.x = -PLAYER_HSPD_WALK_MAX;
+            player.speed.x -= (collision & MAP_TILE_BLOCK_B) ? PLAYER_HSPD_WALK_ACC : PLAYER_HSPD_JUMP_ACC;
+            if (player.speed.x < -PLAYER_HSPD_WALK_MAX)
+                player.speed.x = -PLAYER_HSPD_WALK_MAX;
         }
         else
         if (ui_kbd_pressed(UI_KBD_KEYCODE_CRSR_RIGHT) && !ui_kbd_pressed(UI_KBD_KEYCODE_CRSR_LEFT)) {
 
-            player.pd.x += (collision & MAP_TILE_BLOCK_B) ? PLAYER_HSPD_WALK_ACC : PLAYER_HSPD_JUMP_ACC;
-            if (player.pd.x > PLAYER_HSPD_WALK_MAX)
-                player.pd.x = PLAYER_HSPD_WALK_MAX;
+            player.speed.x += (collision & MAP_TILE_BLOCK_B) ? PLAYER_HSPD_WALK_ACC : PLAYER_HSPD_JUMP_ACC;
+            if (player.speed.x > PLAYER_HSPD_WALK_MAX)
+                player.speed.x = PLAYER_HSPD_WALK_MAX;
         }
         else {
 
-            player.pd.x /= 2;
+            player.speed.x /= 2;
         }
 
         // actions on single keypresses
@@ -346,23 +328,23 @@ int main(void) {
             if (keycode == UI_KBD_PRESS(CRSR_UP)) {
 
                 if (collision & MAP_TILE_BLOCK_B)
-                    player.pd.y = -PLAYER_VSPD_JUMP_ACC;
+                    player.speed.y = -PLAYER_VSPD_JUMP_ACC;
             }
         }
 
         if (ui_kbd_pressed(UI_KBD_KEYCODE_Q))
             break;
         
-        if (player.pd.y < PLAYER_VSPD_FALL_MAX)
-            player.pd.y += PLAYER_VSPD_FALL_ACC;
+        if (player.speed.y < PLAYER_VSPD_FALL_MAX)
+            player.speed.y += PLAYER_VSPD_FALL_ACC;
 
         collision = adjust_by_static_objects(&player);
 
-        if (player.pd.y != 0 || player.pd.x != 0) {
+        if (player.speed.y != 0 || player.speed.x != 0) {
             
             map_dirty_by_object(&player);
-            player.position.y += player.pd.y;
-            player.position.x += player.pd.x;
+            player.position.y += player.speed.y;
+            player.position.x += player.speed.x;
             map_dirty_by_object(&player);
         }
 
